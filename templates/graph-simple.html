@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="utf-8">
+        <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://v5.bootcss.com/docs/5.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.1.1/echarts.min.js"></script>
+        <link href="https://v5.bootcss.com/docs/5.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+            </head>
+    <body style="height: 100%; margin: 0">
+
+    <div class="input-group mb-3">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="true" id="bt-display">人物</button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">人物</a></li>
+            <li><a class="dropdown-item" href="#">事件</a></li>
+            <li><a class="dropdown-item" href="#">关系</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">其他</a></li>
+          </ul>
+      <input type="text" class="form-control" placeholder="Input Query" aria-label="Input query" id="query">
+      <button class="btn btn-outline-secondary" type="button" id="search_button">搜索</button>
+    </div>
+        <div id="container" style="height: 100%"></div>
+
+{#        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-nightly@5.1.2-dev.20210512/dist/echarts.min.js"></script>#}
+{##}
+{#        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-nightly@5.1.2-dev.20210512/dist/extension/dataTool.min.js"></script>#}
+{#        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-gl@2/dist/echarts-gl.min.js"></script>#}
+{#        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-stat@latest/dist/ecStat.min.js"></script>#}
+
+        <!-- Uncomment this line if you want to use map
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-nightly@5.1.2-dev.20210512/map/js/china.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-nightly@5.1.2-dev.20210512/map/js/world.js"></script>
+        -->
+        <!-- Uncomment these two lines if you want to use bmap extension
+        <script type="text/javascript" src="https://api.map.baidu.com/api?v=2.0&ak=<Your Key Here>"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-nightly@5.1.2-dev.20210512/dist/extension/bmap.min.js"></script>
+        -->
+
+        <script type="text/javascript">
+            var dom = document.getElementById("container");
+            var myChart = echarts.init(dom);
+            var app = {};
+
+            var option;
+
+            option = {
+                title: {
+                    text: 'Graph 简单示例'
+                },
+                tooltip: {
+                    confine: true,
+                    extraCssText:'margin:20px;white-space:pre-wrap',
+                     formatter: function (x) {
+                         if(x.dataType=='node') {
+                             return x.data.name
+                         }
+                         else{
+                             return x.data.texts
+                         }
+                    }
+                },
+                animationDurationUpdate: 1500,
+                animationEasingUpdate: 'quinticInOut',
+                series: [
+                    {
+                        type: 'graph',
+                        layout: 'force',
+                        symbolSize: 50,
+                        roam: true,
+                        label: {
+                            show: true
+                        },
+                        edgeSymbol: ['circle', 'arrow'],
+                        edgeSymbolSize: [4, 10],
+                        edgeLabel: {
+                            fontSize: 20
+                        },
+                        data: [{
+                            name: '节点1'
+                        }, {
+                            name: '节点2'
+                        }, {
+                            name: '节点3'
+                        }, {
+                            name: '节点4'
+                        }],
+                        force: {
+                            initLayout: 'circular',
+                            gravity: 0,
+                            repulsion: 10000,
+                            edgeLength: 50
+                        },
+                        // links: [],
+                        links: [{
+                            source: 0,
+                            target: 1,
+                            symbolSize: [5, 20],
+                            label: {
+                                show: true
+                            },
+                            lineStyle: {
+                                width: 5,
+                                curveness: 0.2
+                            }
+                        }, {
+                            source: '节点2',
+                            target: '节点1',
+                            value: 'this is the value of link',
+                            label: {
+                                show: true,
+                                formatter: function(params){
+                                    return params.data.value;
+                                },
+                            },
+                            lineStyle: {
+                                curveness: 0.2
+                            }
+                        }, {
+                            source: '节点1',
+                            target: '节点3'
+                        }, {
+                            source: '节点2',
+                            target: '节点3'
+                        }, {
+                            source: '节点2',
+                            target: '节点4'
+                        }, {
+                            source: '节点1',
+                            target: '节点4'
+                        }],
+                        lineStyle: {
+                            opacity: 0.9,
+                            width: 2,
+                            curveness: 0
+                        }
+                    }
+                ]
+            };
+
+            if (option && typeof option === 'object') {
+                myChart.setOption(option);
+            }
+
+        </script>
+    <script>
+        $('#search_button').click(function (e) {
+            let query = $('#query').val();
+            let field = $("#bt-display").text();
+            $.post(
+                "querysample",
+                {
+                    "field":field,
+                    "query":query
+                },
+                function (result) {
+                    if(result) {
+                        console.log(result)
+                        option['series'][0]['data'] = result['data'];
+                        option['series'][0]['links'] = result['links'];
+                        for (let i in result['links']) {
+                            result['links'][i]['label'] = {
+                                show: true,
+                                formatter: function (params) {
+                                    console.log(params)
+                                    return params.data.value;
+                                },
+                            }
+                        }
+                        //console.log(option)
+                        myChart.setOption(option);
+                    }
+                    else{alert("查询失败，可能是功能暂未完善，也可能是您的输入有误，烦请检查。")}
+                }
+            )
+        })
+    </script>
+
+    <script>
+        $('a.dropdown-item').click(function (e) {
+            console.log($("#bt-display").text(this.text))
+
+        })
+    </script>
+    </body>
+</html>
+    
