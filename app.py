@@ -14,24 +14,28 @@ def hello_world():
 def query():
     if(request.form['field']=="人物"):
         query = request.form['query']
-        print(query)
+        print(query,request.form['type'])
         matcher = NodeMatcher(graph)
         node = matcher.match("Person_entity", name=query).first()
         if node:
-            matcher = RelationshipMatcher(graph)
-            relations = matcher.match({node}).limit(10)
-            nodes = [node["name"]]
+            nodeid = node.identity
+            tp = "Person_entity" if request.form['type'] == "人物节点" else "Object"
+            cursor = graph.run("MATCH (a) WHERE id(a) = %d MATCH (a)-[_]-(b:%s) RETURN _ LIMIT %d" % (nodeid,tp,int(request.form['neighbor'])))
+            # matcher = RelationshipMatcher(graph)
+            # relations = matcher.match(nodes={node}).limit(int(request.form['neighbor']))
+            nodes = []
             edges = []
-            for relation in relations:
+            for record in cursor:
+                relation = dict(record)['_']
                 nodes.append(relation.start_node["name"])
                 nodes.append(relation.end_node["name"])
                 edges.append({"source":relation.start_node["name"],"target":relation.end_node['name'], "value":type(relation).__name__, "texts":relation['content']})
             nodes = list(set(nodes))
-            node_set = []
+            node_set = [{"name": node["name"], "nodeType": "人物节点", "category": 0}]
             for n in nodes:
-                node_set.append({"name":n, "nodeType":"人物节点"})
+                if n == node["name"]:continue
+                node_set.append({"name":n, "nodeType":request.form['type'],"category": 0 if request.form['type']=="人物节点" else 1})
             print(request.form)
-            print("查询成功")
             return {"data": node_set,"links": edges, "info":"当前检索策略下，检出 %d 个节点以及 %d 条连边。" % (len(node_set),len(edges))}
         else:
             print(request.form)
@@ -99,8 +103,6 @@ def query_node():
             print(request.form)
             print("查询失败！")
             return {"data": None, "info": "根据检索条件，无对应节点被检出。"}
-
-
 
 if __name__ == '__main__':
     app.run()

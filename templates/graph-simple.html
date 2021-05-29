@@ -19,10 +19,60 @@
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#">其他</a></li>
           </ul>
-      <input type="text" class="form-control" placeholder="Input Query" aria-label="Input query" id="query">
-      <button class="btn btn-outline-secondary" type="button" id="search_button">搜索</button>
+      <input type="text" class="form-control" placeholder="输入检索词，默认支持正则表达式" aria-label="Input query" id="query">
+      <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#exampleModal">检索设置</button>
+        <button class="btn btn-primary" type="button" id="search_button">搜索</button>
     </div>
         <div id="container" style="height: 100%"></div>
+    <!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">检索策略设置</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <ul>
+              <li>
+                  <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled" checked disabled>
+                  <label class="form-check-label" for="flexCheckCheckedDisabled">
+                    支持正则表达式
+                  </label>
+                  </div>
+              </li>
+              <li>
+                  <div class="row mb-3">
+                      <label class="col-sm-4">限制关联节点数</label>
+                      <div class="col-sm-5">
+                          <input type="range" class="form-range" min="10" max="80" step="10" id="neighborRange" value="10">
+                      </div>
+                      <div class="col-sm-2" id="neighborValue">10</div>
+                  </div>
+              </li>
+              <li>
+                  <div class="row mb-3">
+                      <label class="col-sm-4">关联默认检索类型</label>
+                      <div class="col-sm-4">
+                          <select class="form-select form-select-sm" id="stype" aria-label=".form-select-sm example">
+                              <option selected>人物节点</option>
+                              <option value="事/物节点">事/物节点</option>
+                              <option value="其他节点">其他节点</option>
+                          </select>
+                      </div>
+                      <div class="col-sm-4 text-light">(事件模式下失效)</div>
+                  </div>
+              </li>
+          </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭窗口</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">保存更改</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 {#        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-nightly@5.1.2-dev.20210512/dist/echarts.min.js"></script>#}
 {##}
@@ -48,7 +98,8 @@
 
             option = {
                 title: {
-                    text: 'Graph 简单示例'
+                    text: '当前视图为空',
+                    subtext: '请利用上方检索栏进行检索'
                 },
                 tooltip: {
                     confine: true,
@@ -102,19 +153,7 @@
                             fontSize: 20
                         },
                         categories:[0,1],
-                        data: [{
-                            name: '节点1',
-                            category:0
-                        }, {
-                            name: '节点2',
-                            category:1
-                        }, {
-                            name: '节点3',
-                            category: 0
-                        }, {
-                            name: '节点4',
-                            category: 1
-                        }],
+                        data: [],
                         force: {
                             initLayout: 'circular',
                             gravity: 0.05,
@@ -122,43 +161,7 @@
                             edgeLength: 40
                         },
                         // links: [],
-                        links: [{
-                            source: 0,
-                            target: 1,
-                            symbolSize: [5, 20],
-                            label: {
-                                show: true
-                            },
-                            lineStyle: {
-                                width: 5,
-                                curveness: 0.2
-                            }
-                        }, {
-                            source: '节点2',
-                            target: '节点1',
-                            value: 'this is the value of link',
-                            label: {
-                                show: true,
-                                formatter: function(params){
-                                    return params.data.value;
-                                },
-                            },
-                            lineStyle: {
-                                curveness: 0.2
-                            }
-                        }, {
-                            source: '节点1',
-                            target: '节点3'
-                        }, {
-                            source: '节点2',
-                            target: '节点3'
-                        }, {
-                            source: '节点2',
-                            target: '节点4'
-                        }, {
-                            source: '节点1',
-                            target: '节点4'
-                        }],
+                        links: [],
                         lineStyle: {
                             opacity: 0.9,
                             width: 2,
@@ -177,15 +180,19 @@
                 if(params.dataType == "node"){
                     console.log(params)
                     if(params.data.nodeType == "人物节点") {
+                        var neighbor = $('#neighborRange').val()
+                        var stype = $('#stype').val()
                         $.post(
                             "querysample",
                             {
                                 "field": "人物",
-                                "query": query
+                                "query": query,
+                                "neighbor": neighbor,
+                                "type": stype
                             },
                             function (result) {
                                 if (result) {
-                                    option['title']['text'] = "\"" + query + "\"的人物关系匹配结果"
+                                    option['title']['text'] = "\"" + query + "\"的"+ stype +"关系匹配结果"
                                     option['title']['subtext'] = result['info']
                                     option['series'][0]['data'] = result['data'];
                                     option['series'][0]['links'] = result['links'];
@@ -299,6 +306,12 @@
     <script>
         $('a.dropdown-item').click(function (e) {
             console.log($("#bt-display").text(this.text))
+        })
+    </script>
+    <script>
+        $('#neighborRange').on("input",function () {
+            v = $('#neighborRange').val();
+            $('#neighborValue').text(v)
         })
     </script>
     </body>
