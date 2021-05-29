@@ -59,7 +59,17 @@
                              return x.data.name
                          }
                          else{
-                             return x.data.texts
+                             if(x.data.texts) {
+                                 var texts = x.data.texts
+                                 var source = x.data.source
+                                 var target = x.data.target
+                                 texts = texts.replace(source, "<b>" + source + "</b>")
+                                 texts = texts.replace(target, '<b>' + target + '</b>')
+                                 return texts
+                             }
+                             else{
+                                 return x.data.value
+                             }
                          }
                     }
                 },
@@ -90,9 +100,9 @@
                         }],
                         force: {
                             initLayout: 'circular',
-                            gravity: 0,
-                            repulsion: 10000,
-                            edgeLength: 50
+                            gravity: 0.05,
+                            repulsion: 1000,
+                            edgeLength: 40
                         },
                         // links: [],
                         links: [{
@@ -135,7 +145,7 @@
                         lineStyle: {
                             opacity: 0.9,
                             width: 2,
-                            curveness: 0
+                            curveness: 0.9
                         }
                     }
                 ]
@@ -145,35 +155,64 @@
                 myChart.setOption(option);
             }
 
+
+            myChart.on('click',function (params) {
+                var query = params.data.name
+                if(params.dataType == "node"){
+                    $.post(
+                        "querysample",
+                        {
+                            "field":"人物",
+                            "query": query
+                        },
+                        function (result) {
+                            if(result) {
+                                option['title']['text'] = "\"" + query + "\"的人物关系匹配结果"
+                                option['title']['subtext'] = result['info']
+                                option['series'][0]['data'] = result['data'];
+                                option['series'][0]['links'] = result['links'];
+                                for (let i in result['links']) {
+                                    result['links'][i]['label'] = {
+                                        fontWeight: 'lighter',
+                                        fontSize: 8,
+                                        show: true,
+                                        formatter: function (params) {
+                                            return params.data.value;
+                                        },
+                                    };
+                                    result['links'][i]['lineStyle'] = {
+                                        curveness: 0.2
+                                    }
+                                }
+                                myChart.setOption(option);
+                            }
+                            else{alert("查询失败，可能是功能暂未完善，也可能是您的输入有误，烦请检查。")}
+                        }
+                    )
+                }})
         </script>
     <script>
         $('#search_button').click(function (e) {
             let query = $('#query').val();
             let field = $("#bt-display").text();
             $.post(
-                "querysample",
+                "querynode",
                 {
                     "field":field,
                     "query":query
                 },
                 function (result) {
-                    if(result) {
-                        console.log(result)
+                    option['title']['text'] = "\"" + query + "\"的匹配节点";
+                    option['title']['subtext'] = result['info'];
+                    if(result['data']){
                         option['series'][0]['data'] = result['data'];
-                        option['series'][0]['links'] = result['links'];
-                        for (let i in result['links']) {
-                            result['links'][i]['label'] = {
-                                show: true,
-                                formatter: function (params) {
-                                    console.log(params)
-                                    return params.data.value;
-                                },
-                            }
-                        }
-                        //console.log(option)
-                        myChart.setOption(option);
+                    }else{
+                        option['series'][0]['data'] = [{"name":"无结果"}]
                     }
-                    else{alert("查询失败，可能是功能暂未完善，也可能是您的输入有误，烦请检查。")}
+
+                    //console.log(option)
+                    myChart.setOption(option);
+
                 }
             )
         })
@@ -182,9 +221,7 @@
     <script>
         $('a.dropdown-item').click(function (e) {
             console.log($("#bt-display").text(this.text))
-
         })
     </script>
     </body>
 </html>
-    
