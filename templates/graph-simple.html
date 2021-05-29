@@ -7,7 +7,6 @@
         <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.1.1/echarts.min.js"></script>
         <link href="https://v5.bootcss.com/docs/5.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-
             </head>
     <body style="height: 100%; margin: 0">
 
@@ -56,25 +55,38 @@
                     extraCssText:'margin:20px;white-space:pre-wrap',
                      formatter: function (x) {
                          if(x.dataType=='node') {
-                             return x.data.name
+                             var name = x.data.name
+                             var type = x.data.nodeType
+                             if(type == '事/物节点') {
+                                 var text = name + ("<br /> <span class=\"badge bg-warning rounded-pill text-dark\">" + type + "</span>")
+                             }
+                             else if(type == '人物节点'){
+                                 var text = name + ("<br /> <span class=\"badge bg-success rounded-pill\">" + type + "</span>")
+                             }
+                             else{
+                                 var text = name
+                             }
+                             return text
                          }
                          else{
                              if(x.data.texts) {
                                  var texts = x.data.texts
                                  var source = x.data.source
                                  var target = x.data.target
-                                 texts = texts.replace(source, "<b>" + source + "</b>")
-                                 texts = texts.replace(target, '<b>' + target + '</b>')
+                                 texts = texts.replace(source, "<span class=\"text-danger\"><b>" + source + "</b></span>")
+                                 texts = texts.replace(target, '<span class=\"text-danger\"><b>' + target + '</b></span>')
+                                 texts = "<span class=\"badge bg-light rounded-pill text-dark\">原文：</span><br />" + texts
                                  return texts
                              }
                              else{
-                                 return x.data.value
+                                 return "<span class=\"badge bg-light rounded-pill text-dark\">关系分类：</span><br />" + x.data.value
                              }
                          }
                     }
                 },
                 animationDurationUpdate: 1500,
                 animationEasingUpdate: 'quinticInOut',
+                color:['#91cc75','#fac858'],
                 series: [
                     {
                         type: 'graph',
@@ -89,14 +101,19 @@
                         edgeLabel: {
                             fontSize: 20
                         },
+                        categories:[0,1],
                         data: [{
-                            name: '节点1'
+                            name: '节点1',
+                            category:0
                         }, {
-                            name: '节点2'
+                            name: '节点2',
+                            category:1
                         }, {
-                            name: '节点3'
+                            name: '节点3',
+                            category: 0
                         }, {
-                            name: '节点4'
+                            name: '节点4',
+                            category: 1
                         }],
                         force: {
                             initLayout: 'circular',
@@ -155,66 +172,127 @@
                 myChart.setOption(option);
             }
 
-
             myChart.on('click',function (params) {
                 var query = params.data.name
                 if(params.dataType == "node"){
-                    $.post(
-                        "querysample",
-                        {
-                            "field":"人物",
-                            "query": query
-                        },
-                        function (result) {
-                            if(result) {
-                                option['title']['text'] = "\"" + query + "\"的人物关系匹配结果"
-                                option['title']['subtext'] = result['info']
-                                option['series'][0]['data'] = result['data'];
-                                option['series'][0]['links'] = result['links'];
-                                for (let i in result['links']) {
-                                    result['links'][i]['label'] = {
-                                        fontWeight: 'lighter',
-                                        fontSize: 8,
-                                        show: true,
-                                        formatter: function (params) {
-                                            return params.data.value;
-                                        },
-                                    };
-                                    result['links'][i]['lineStyle'] = {
-                                        curveness: 0.2
+                    console.log(params)
+                    if(params.data.nodeType == "人物节点") {
+                        $.post(
+                            "querysample",
+                            {
+                                "field": "人物",
+                                "query": query
+                            },
+                            function (result) {
+                                if (result) {
+                                    option['title']['text'] = "\"" + query + "\"的人物关系匹配结果"
+                                    option['title']['subtext'] = result['info']
+                                    option['series'][0]['data'] = result['data'];
+                                    option['series'][0]['links'] = result['links'];
+                                    for (let i in result['links']) {
+                                        result['links'][i]['label'] = {
+                                            fontWeight: 'lighter',
+                                            fontSize: 8,
+                                            show: true,
+                                            formatter: function (params) {
+                                                return params.data.value;
+                                            },
+                                        };
+                                        result['links'][i]['lineStyle'] = {
+                                            curveness: 0.2
+                                        }
                                     }
+                                    myChart.setOption(option);
+                                } else {
+                                    alert("查询失败，可能是功能暂未完善，也可能是您的输入有误，烦请检查。")
                                 }
-                                myChart.setOption(option);
                             }
-                            else{alert("查询失败，可能是功能暂未完善，也可能是您的输入有误，烦请检查。")}
-                        }
-                    )
+                        )
+                    }
+                    else if(params.data.nodeType == "事/物节点"){
+                        $.post(
+                            "querysample",
+                            {
+                                "field": "事件",
+                                "query": query
+                            },
+                            function (result) {
+                                if (result) {
+                                    option['title']['text'] = "\"" + query + "\"的相关人物匹配结果"
+                                    option['title']['subtext'] = result['info']
+                                    option['series'][0]['data'] = result['data'];
+                                    option['series'][0]['links'] = result['links'];
+                                    for (let i in result['links']) {
+                                        result['links'][i]['label'] = {
+                                            fontWeight: 'lighter',
+                                            fontSize: 8,
+                                            show: true,
+                                            formatter: function (params) {
+                                                return params.data.value;
+                                            },
+                                        };
+                                        result['links'][i]['lineStyle'] = {
+                                            curveness: 0.2
+                                        }
+                                    }
+                                    myChart.setOption(option);
+                                } else {
+                                    alert("查询失败，可能是功能暂未完善，也可能是您的输入有误，烦请检查。")
+                                }
+                            }
+                        )
+                    }
                 }})
         </script>
     <script>
         $('#search_button').click(function (e) {
             let query = $('#query').val();
             let field = $("#bt-display").text();
-            $.post(
-                "querynode",
-                {
-                    "field":field,
-                    "query":query
-                },
-                function (result) {
-                    option['title']['text'] = "\"" + query + "\"的匹配节点";
-                    option['title']['subtext'] = result['info'];
-                    if(result['data']){
-                        option['series'][0]['data'] = result['data'];
-                    }else{
-                        option['series'][0]['data'] = [{"name":"无结果"}]
+            if(field == '人物') {
+                $.post(
+                    "querynode",
+                    {
+                        "field": field,
+                        "query": query
+                    },
+                    function (result) {
+                        option['title']['text'] = "\"" + query + "\"的匹配节点";
+                        option['title']['subtext'] = result['info'];
+                        if (result['data']) {
+                            option['series'][0]['data'] = result['data'];
+                            option['series'][0]['links'] = [];
+                        } else {
+                            option['series'][0]['data'] = [{"name": "无结果"}]
+                        }
+
+                        //console.log(option)
+                        myChart.setOption(option);
+
                     }
+                )
+            }
+            else if(field == '事件'){
+                $.post(
+                    "querynode",
+                    {
+                        "field": field,
+                        "query": query
+                    },
+                    function (result) {
+                        option['title']['text'] = "\"" + query + "\"的匹配节点";
+                        option['title']['subtext'] = result['info'];
+                        if (result['data']) {
+                            option['series'][0]['data'] = result['data'];
+                            option['series'][0]['links'] = [];
+                        } else {
+                            option['series'][0]['data'] = [{"name": "无结果"}]
+                        }
+                        console.log(option)
+                        myChart.setOption(option);
 
-                    //console.log(option)
-                    myChart.setOption(option);
-
-                }
-            )
+                    }
+                )
+            }
         })
     </script>
 
