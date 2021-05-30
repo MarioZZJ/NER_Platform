@@ -59,7 +59,7 @@ def query():
                 nodes.append(relation.start_node["name"])
                 nodes.append(relation.end_node["name"])
                 edges.append({"source": relation.start_node["name"], "target": relation.end_node['name'],
-                              "origin": relation["type"], "type": type(relation).__name__})
+                              "origin": relation["type"], "type": type(relation).__name__,"value":type(relation).__name__ if relation['content'] else relation["type"]})
             nodes = list(set(nodes))
             node_set = []
             for n in nodes:
