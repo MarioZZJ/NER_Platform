@@ -7,8 +7,13 @@ url, auths = params()
 graph = Graph(url, auth=auths)
 
 @app.route('/')
-def hello_world():
+@app.route('/home/')
+def home():
     return render_template('graph-simple.html')
+
+@app.route('/bi/')
+def bi():
+    return render_template('powerbi.html')
 
 @app.route('/querysample',methods=['POST'])
 def query():
@@ -29,7 +34,7 @@ def query():
                 relation = dict(record)['_']
                 nodes.append(relation.start_node["name"])
                 nodes.append(relation.end_node["name"])
-                edges.append({"source":relation.start_node["name"],"target":relation.end_node['name'], "value":type(relation).__name__, "texts":relation['content']})
+                edges.append({"source":relation.start_node["name"],"target":relation.end_node['name'], "type":type(relation).__name__, "origin":relation["type"], "texts":relation['content'], "value":type(relation).__name__ if relation['content'] else relation["type"]})
             nodes = list(set(nodes))
             node_set = [{"name": node["name"], "nodeType": "人物节点", "category": 0}]
             for n in nodes:
@@ -54,7 +59,7 @@ def query():
                 nodes.append(relation.start_node["name"])
                 nodes.append(relation.end_node["name"])
                 edges.append({"source": relation.start_node["name"], "target": relation.end_node['name'],
-                              "value": relation["type"]})
+                              "origin": relation["type"], "type": type(relation).__name__})
             nodes = list(set(nodes))
             node_set = []
             for n in nodes:
